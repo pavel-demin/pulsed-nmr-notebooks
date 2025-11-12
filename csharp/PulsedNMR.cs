@@ -146,21 +146,21 @@ public class Client
     }
   }
 
-  public int[] ReadData()
+  public float[] ReadData()
   {
     int n, offset;
     long limit;
     byte[] buffer;
-    int[] result;
+    float[] result;
     UpdateSize();
     try
     {
       buffer = new byte[65536];
-      result = new int[size * 4];
+      result = new float[size * 4];
     }
     catch
     {
-      return new int[0];
+      return new float[0];
     }
     if (socket == null) return result;
     SendCommand(11, size);

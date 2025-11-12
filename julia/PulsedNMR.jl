@@ -131,9 +131,7 @@ function read_data!(c::Client)
 
     data = read(c.socket, c.size * 16)
 
-    data_float = Float32.(reinterpret(Int32, data)) ./ Float32(2.0^30)
-
-    reinterpret(ComplexF32, data_float)
+    reinterpret(ComplexF32, data)
 end
 
 end # module PulsedNMR

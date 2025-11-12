@@ -86,7 +86,7 @@ class Client:
     def read_data(self):
         self.update_size()
 
-        data = np.empty(self.size * 4, np.int32)
+        data = np.empty(self.size * 2, np.complex64)
         view = data.view(np.uint8)
 
         self.send_command(11, self.size)
@@ -99,4 +99,4 @@ class Client:
             view[offset : offset + size] = np.frombuffer(buffer, np.uint8)
             offset += size
 
-        return data.astype(np.float32).view(np.complex64) / 2**30
+        return data
