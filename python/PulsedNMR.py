@@ -30,7 +30,7 @@ class Client:
     def send_command(self, code, data):
         self.socket.sendall(pack("<Q", int(code) << 60 | int(data)))
 
-    def set_freqs(self, rx, tx):
+    def set_freqs(self, tx, rx):
         self.send_command(0, rx)
         self.send_command(1, tx)
 

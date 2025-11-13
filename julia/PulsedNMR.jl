@@ -51,7 +51,7 @@ function _send_command(c::Client, code::Int64, data::Int64)
     nothing
 end
 
-function set_freqs!(c::Client; rx::Real, tx::Real)
+function set_freqs!(c::Client; tx::Real, rx::Real)
     _send_command(c, 0, round(Int64, rx))
     _send_command(c, 1, round(Int64, tx))
 end

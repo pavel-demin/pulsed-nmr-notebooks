@@ -73,7 +73,7 @@ public class Client
     }
   }
 
-  public void SetFreqs(double rx, double tx)
+  public void SetFreqs(double tx, double rx)
   {
     SendCommand(0, (long)(rx + 0.5));
     SendCommand(1, (long)(tx + 0.5));
