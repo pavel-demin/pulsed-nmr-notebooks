@@ -14,9 +14,9 @@ class Client:
         # time between two RX samples
         self.dt = self.cic_rate * 2 / self.adc_rate
         # total delay
-        self.lastDelay = 0
+        self.last_delay = 0
         # read flag of the last event
-        self.lastRead = 0
+        self.last_read = 0
         # total number of RX samples
         self.size = 0
 
@@ -54,19 +54,19 @@ class Client:
         self.send_command(5, pin)
 
     def clear_events(self, read_delay=0):
-        self.lastDelay = int(read_delay * self.adc_rate + 0.5)
-        self.lastRead = 0
+        self.last_delay = int(read_delay * self.adc_rate + 0.5)
+        self.last_read = 0
         self.size = 0
         self.send_command(6, 0)
 
     def update_size(self):
-        sz = int(self.lastDelay / (self.cic_rate * 2) + 0.5)
+        sz = int(self.last_delay / (self.cic_rate * 2) + 0.5)
         if sz > 0:
-            self.send_command(9, self.lastRead << 40 | int(sz - 1))
-        if self.lastRead:
+            self.send_command(9, self.last_read << 40 | int(sz - 1))
+        if self.last_read:
             self.size += sz
-        self.lastDelay = 0
-        self.lastRead = 0
+        self.last_delay = 0
+        self.last_read = 0
 
     def add_event(self, delay, sync=0, gate=0, read=0, level=0, tx_phase=0, rx_phase=0):
         dly = int(delay * self.adc_rate + 0.5)
@@ -75,12 +75,12 @@ class Client:
         rxp = int(rx_phase / 360.0 * 0x3FFFFFFF + 0.5)
         self.send_command(7, lvl << 44 | gate << 41 | sync << 40 | (dly - 1))
         self.send_command(8, rxp << 30 | txp)
-        if self.lastRead == read:
-            self.lastDelay += dly
+        if self.last_read == read:
+            self.last_delay += dly
         else:
             self.update_size()
-            self.lastDelay = dly
-            self.lastRead = read
+            self.last_delay = dly
+            self.last_read = read
 
     def read_data(self):
         self.update_size()

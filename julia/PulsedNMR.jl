@@ -25,9 +25,9 @@ mutable struct Client
     # time between two RX samples
     dt::Real
     # total delay
-    lastDelay::Int64
+    last_delay::Int64
     # read flag of the last event
-    lastRead::Int64
+    last_read::Int64
     # total number of RX samples
     size::Int64
     Client() = new(TCPSocket(), 125, 50, 0.8, 0, 0, 0)
@@ -81,25 +81,25 @@ function clear_pin!(c::Client; pin::Int64)
 end
 
 function clear_events!(c::Client; read_delay::Real=0)
-    c.lastDelay = round(Int64, read_delay * c.adc_rate)
-    c.lastRead = 0
+    c.last_delay = round(Int64, read_delay * c.adc_rate)
+    c.last_read = 0
     c.size = 0
     _send_command(c, 6, 0)
 end
 
 function _update_size!(c::Client)
-    sz = round(Int64, c.lastDelay / (c.cic_rate * 2))
+    sz = round(Int64, c.last_delay / (c.cic_rate * 2))
 
     if sz > 0
-        _send_command(c, 9, c.lastRead << 40 | (sz - 1))
+        _send_command(c, 9, c.last_read << 40 | (sz - 1))
     end
 
-    if c.lastRead != 0
+    if c.last_read != 0
         c.size += sz
     end
 
-    c.lastDelay = 0
-    c.lastRead = 0
+    c.last_delay = 0
+    c.last_read = 0
 end
 
 function add_event!(c::Client, delay::Real;
@@ -114,12 +114,12 @@ function add_event!(c::Client, delay::Real;
     _send_command(c, 7, lvl << 44 | gate << 41 | sync << 40 | (dly - 1))
     _send_command(c, 8, rxp << 30 | txp)
 
-    if c.lastRead == read
-        c.lastDelay += dly
+    if c.last_read == read
+        c.last_delay += dly
     else
         _update_size!(c)
-        c.lastDelay = dly
-        c.lastRead = read
+        c.last_delay = dly
+        c.last_read = read
     end
 end
 
