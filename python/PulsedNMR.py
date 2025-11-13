@@ -31,39 +31,38 @@ class Client:
         self.socket.sendall(pack("<Q", int(code) << 60 | int(data)))
 
     def set_freqs(self, tx, rx):
-        self.send_command(0, rx)
-        self.send_command(1, tx)
+        self.send_command(0, int(rx + 0.5) << 30 | int(tx + 0.5))
 
     def set_rates(self, adc, cic):
         self.adc_rate = adc
         self.cic_rate = cic
         self.dt = cic * 2 / adc
-        self.send_command(2, cic)
+        self.send_command(1, cic)
 
     def set_dac(self, level):
         lvl = int(level / 100.0 * 4095 + 0.5)
-        self.send_command(3, lvl)
+        self.send_command(2, lvl)
 
     def set_level(self, level):
         lvl = int(level / 100.0 * 32766 + 0.5)
-        self.send_command(4, lvl)
+        self.send_command(3, lvl)
 
     def set_pin(self, pin):
-        self.send_command(5, pin)
+        self.send_command(4, pin)
 
     def clear_pin(self, pin):
-        self.send_command(6, pin)
+        self.send_command(5, pin)
 
     def clear_events(self, read_delay=0):
         self.lastDelay = int(read_delay * self.adc_rate + 0.5)
         self.lastRead = 0
         self.size = 0
-        self.send_command(7, 0)
+        self.send_command(6, 0)
 
     def update_size(self):
         sz = int(self.lastDelay / (self.cic_rate * 2) + 0.5)
         if sz > 0:
-            self.send_command(10, self.lastRead << 40 | int(sz - 1))
+            self.send_command(9, self.lastRead << 40 | int(sz - 1))
         if self.lastRead:
             self.size += sz
         self.lastDelay = 0
@@ -74,8 +73,8 @@ class Client:
         lvl = int(level / 100.0 * 32766 + 0.5)
         txp = int(tx_phase / 360.0 * 0x3FFFFFFF + 0.5)
         rxp = int(rx_phase / 360.0 * 0x3FFFFFFF + 0.5)
-        self.send_command(8, lvl << 44 | gate << 41 | sync << 40 | (dly - 1))
-        self.send_command(9, rxp << 30 | txp)
+        self.send_command(7, lvl << 44 | gate << 41 | sync << 40 | (dly - 1))
+        self.send_command(8, rxp << 30 | txp)
         if self.lastRead == read:
             self.lastDelay += dly
         else:
@@ -89,7 +88,7 @@ class Client:
         data = np.empty(self.size * 2, np.complex64)
         view = data.view(np.uint8)
 
-        self.send_command(11, self.size)
+        self.send_command(10, self.size)
 
         offset = 0
         limit = view.size

@@ -75,8 +75,7 @@ public class Client
 
   public void SetFreqs(double tx, double rx)
   {
-    SendCommand(0, (long)(rx + 0.5));
-    SendCommand(1, (long)(tx + 0.5));
+    SendCommand(0, (long)(rx + 0.5) << 30 | (long)(tx + 0.5));
   }
 
   public void SetRates(double adc, int cic)
@@ -84,29 +83,29 @@ public class Client
     adcRate = adc;
     cicRate = cic;
     dt = cic * 2 / adc;
-    SendCommand(2, cic);
+    SendCommand(1, cic);
   }
 
   public void SetDAC(int level)
   {
     long lvl = (long)(level / 100.0 * 4095 + 0.5);
-    SendCommand(3, lvl);
+    SendCommand(2, lvl);
   }
 
   public void SetLevel(double level)
   {
     long lvl = (long)(level / 100.0 * 32766 + 0.5);
-    SendCommand(4, lvl);
+    SendCommand(3, lvl);
   }
 
   public void SetPin(int pin)
   {
-    SendCommand(5, pin);
+    SendCommand(4, pin);
   }
 
   public void ClearPin(int pin)
   {
-    SendCommand(6, pin);
+    SendCommand(5, pin);
   }
 
   public void ClearEvents(double readDelay)
@@ -114,13 +113,13 @@ public class Client
     lastDelay = (long)(readDelay * adcRate + 0.5);
     lastRead = 0;
     size = 0;
-    SendCommand(7, 0);
+    SendCommand(6, 0);
   }
 
   private void UpdateSize()
   {
     long sz = (long)(lastDelay / (cicRate * 2) + 0.5);
-    if (sz > 0) SendCommand(10, (long)lastRead << 40 | (sz - 1));
+    if (sz > 0) SendCommand(9, (long)lastRead << 40 | (sz - 1));
     if (lastRead > 0) size += sz;
     lastDelay = 0;
     lastRead = 0;
@@ -132,8 +131,8 @@ public class Client
     long lvl = (long)(level / 100.0 * 32766 + 0.5);
     long txp = (long)(txPhase / 360.0 * 0x3FFFFFFF + 0.5);
     long rxp = (long)(rxPhase / 360.0 * 0x3FFFFFFF + 0.5);
-    SendCommand(8, lvl << 44 | (long)gate << 41 | (long)sync << 40 | (dly - 1));
-    SendCommand(9, rxp << 30 | txp);
+    SendCommand(7, lvl << 44 | (long)gate << 41 | (long)sync << 40 | (dly - 1));
+    SendCommand(8, rxp << 30 | txp);
     if (lastRead == read)
     {
       lastDelay += dly;
@@ -163,7 +162,7 @@ public class Client
       return new float[0];
     }
     if (socket == null) return result;
-    SendCommand(11, size);
+    SendCommand(10, size);
     offset = 0;
     limit = size * 16;
     while (offset < limit)

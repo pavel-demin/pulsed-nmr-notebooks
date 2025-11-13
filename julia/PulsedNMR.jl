@@ -52,47 +52,46 @@ function _send_command(c::Client, code::Int64, data::Int64)
 end
 
 function set_freqs!(c::Client; tx::Real, rx::Real)
-    _send_command(c, 0, round(Int64, rx))
-    _send_command(c, 1, round(Int64, tx))
+    _send_command(c, 0, round(Int64, rx) << 30 | round(Int64, tx))
 end
 
 function set_rates!(c::Client; adc::Real, cic::Int64)
     c.adc_rate = adc
     c.cic_rate = cic
     c.dt = cic * 2 / adc
-    _send_command(c, 2, cic)
+    _send_command(c, 1, cic)
 end
 
 function set_dac!(c::Client; level::Real)
     lvl = round(Int64, level / 100.0 * 4095)
-    _send_command(c, 3, lvl)
+    _send_command(c, 2, lvl)
 end
 
 function set_level!(c::Client; level::Real)
     lvl = round(Int64, level / 100.0 * 32766)
-    _send_command(c, 4, lvl)
+    _send_command(c, 3, lvl)
 end
 
 function set_pin!(c::Client; pin::Int64)
-    _send_command(c, 5, pin)
+    _send_command(c, 4, pin)
 end
 
 function clear_pin!(c::Client; pin::Int64)
-    _send_command(c, 6, pin)
+    _send_command(c, 5, pin)
 end
 
 function clear_events!(c::Client; read_delay::Real=0)
     c.lastDelay = round(Int64, read_delay * c.adc_rate)
     c.lastRead = 0
     c.size = 0
-    _send_command(c, 7, 0)
+    _send_command(c, 6, 0)
 end
 
 function _update_size!(c::Client)
     sz = round(Int64, c.lastDelay / (c.cic_rate * 2))
 
     if sz > 0
-        _send_command(c, 10, c.lastRead << 40 | (sz - 1))
+        _send_command(c, 9, c.lastRead << 40 | (sz - 1))
     end
 
     if c.lastRead != 0
@@ -112,8 +111,8 @@ function add_event!(c::Client, delay::Real;
     txp = round(Int64, tx_phase / 360.0 * 0x3fffffff)
     rxp = round(Int64, rx_phase / 360.0 * 0x3fffffff)
 
-    _send_command(c, 8, lvl << 44 | gate << 41 | sync << 40 | (dly - 1))
-    _send_command(c, 9, rxp << 30 | txp)
+    _send_command(c, 7, lvl << 44 | gate << 41 | sync << 40 | (dly - 1))
+    _send_command(c, 8, rxp << 30 | txp)
 
     if c.lastRead == read
         c.lastDelay += dly
@@ -127,7 +126,7 @@ end
 function read_data!(c::Client)
     _update_size!(c)
 
-    _send_command(c, 11, c.size)
+    _send_command(c, 10, c.size)
 
     data = read(c.socket, c.size * 16)
 
