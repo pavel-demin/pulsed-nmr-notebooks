@@ -177,7 +177,11 @@ public class Client
         Disconnect();
         break;
       }
-      if (n == 0) break;
+      if (n == 0)
+      {
+        Disconnect();
+        break;
+      }
       Buffer.BlockCopy(buffer, 0, result, offset, n);
       offset += n;
     }
