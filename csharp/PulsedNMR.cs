@@ -28,6 +28,7 @@ public class Client
     try
     {
       socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+      socket.SendTimeout = 1000;
       socket.ReceiveTimeout = 1000;
       socket.Connect(host, 1001);
     }
