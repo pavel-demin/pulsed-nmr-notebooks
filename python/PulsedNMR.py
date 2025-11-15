@@ -1,4 +1,4 @@
-from socket import create_connection
+from socket import socket, AF_INET, SOCK_STREAM, SHUT_RDWR
 from struct import pack
 import numpy as np
 
@@ -21,14 +21,36 @@ class Client:
         self.size = 0
 
     def connect(self, host):
-        self.socket = create_connection((host, 1001), timeout=1)
-        self.socket.settimeout(None)
+        if self.socket is not None:
+            return
+        try:
+            self.socket = socket(AF_INET, SOCK_STREAM)
+            self.socket.settimeout(1)
+            self.socket.connect((host, 1001))
+        except:
+            self.disconnect()
+
+    def connected(self):
+        return self.socket is not None
 
     def disconnect(self):
-        self.socket.close()
+        if self.socket is None:
+            return
+        try:
+            self.socket.shutdown(SHUT_RDWR)
+        except:
+            pass
+        finally:
+            self.socket.close()
+            self.socket = None
 
     def send_command(self, code, data):
-        self.socket.sendall(pack("<Q", int(code) << 60 | int(data)))
+        if self.socket is None:
+            return
+        try:
+            self.socket.sendall(pack("<Q", int(code) << 60 | int(data)))
+        except:
+            self.disconnect()
 
     def set_freqs(self, tx, rx):
         self.send_command(0, int(rx + 0.5) << 30 | int(tx + 0.5))
@@ -85,16 +107,27 @@ class Client:
     def read_data(self):
         self.update_size()
 
-        data = np.empty(self.size * 2, np.complex64)
+        data = np.zeros(self.size * 2, np.complex64)
+
+        if self.socket is None:
+            return data
+
         view = data.view(np.uint8)
+        limit = view.size
+        offset = 0
 
         self.send_command(10, self.size)
 
-        offset = 0
-        limit = view.size
         while offset < limit:
-            buffer = self.socket.recv(limit - offset)
+            try:
+                buffer = self.socket.recv(limit - offset)
+            except:
+                self.disconnect()
+                break
             size = len(buffer)
+            if size == 0:
+                self.disconnect()
+                break
             view[offset : offset + size] = np.frombuffer(buffer, np.uint8)
             offset += size
 
