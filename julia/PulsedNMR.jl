@@ -13,6 +13,7 @@ export Client,
     clear_pin!,
     clear_events!,
     add_event!,
+    read_time!,
     read_data!
 
 mutable struct Client
@@ -22,15 +23,15 @@ mutable struct Client
     adc_rate::Real
     # CIC decimation rate
     cic_rate::Int64
-    # time between two RX samples
-    dt::Real
     # total delay
     last_delay::Int64
     # read flag of the last event
     last_read::Int64
     # total number of RX samples
     size::Int64
-    Client() = new(TCPSocket(), 125, 50, 0.8, 0, 0, 0)
+    # RX events
+    evts::Vector{Tuple{Int64,Int64}}
+    Client() = new(TCPSocket(), 125, 50, 0, 0, 0, Tuple{Int64,Int64}[])
 end
 
 function connect!(c::Client, host::String)
@@ -58,7 +59,6 @@ end
 function set_rates!(c::Client; adc::Real, cic::Int64)
     c.adc_rate = adc
     c.cic_rate = cic
-    c.dt = cic * 2 / adc
     _send_command(c, 1, cic)
 end
 
@@ -84,13 +84,15 @@ function clear_events!(c::Client; read_delay::Real=0)
     c.last_delay = round(Int64, read_delay * c.adc_rate)
     c.last_read = 0
     c.size = 0
+    empty!(c.evts)
     _send_command(c, 6, 0)
 end
 
 function _update_size!(c::Client)
-    sz = round(Int64, c.last_delay / (c.cic_rate * 2))
+    sz = round(Int64, c.last_delay / (c.cic_rate * 2.0))
 
     if sz > 0
+        push!(c.evts, (c.last_read, sz))
         _send_command(c, 9, c.last_read << 40 | (sz - 1))
     end
 
@@ -121,6 +123,25 @@ function add_event!(c::Client, delay::Real;
         c.last_delay = dly
         c.last_read = read
     end
+end
+
+function read_time!(c::Client)
+    _update_size!(c)
+
+    time = Vector{Float32}(undef, c.size)
+    keep = 0
+    skip = 0
+
+    for (read, size) in c.evts
+        if read != 0
+            time[keep+1:keep+size] .= Float32.(keep .+ skip .+ (0:size-1))
+            keep += size
+        else
+            skip += size
+        end
+    end
+
+    return time .* Float32(c.cic_rate * 2.0 / c.adc_rate)
 end
 
 function read_data!(c::Client)

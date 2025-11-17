@@ -1,26 +1,28 @@
 using System;
 using System.Net.Sockets;
+using System.Collections.Generic;
+
+internal struct Event
+{
+  public int read;
+  public long size;
+
+  public Event(int rd, long sz)
+  {
+    read = rd;
+    size = sz;
+  }
+}
 
 public class Client
 {
   private Socket socket;
-  private double adcRate;
-  private int cicRate;
-  public double dt;
-  private long lastDelay;
-  private int lastRead;
-  private long size;
-
-  public Client()
-  {
-    socket = null;
-    adcRate = 125;
-    cicRate = 50;
-    dt = cicRate * 2 / adcRate;
-    lastDelay = 0;
-    lastRead = 0;
-    size = 0;
-  }
+  private double adcRate = 125;
+  private int cicRate = 50;
+  private long lastDelay = 0;
+  private int lastRead = 0;
+  private long size = 0;
+  private readonly List<Event> evts = new List<Event>();
 
   public void Connect(string host)
   {
@@ -83,7 +85,6 @@ public class Client
   {
     adcRate = adc;
     cicRate = cic;
-    dt = cic * 2 / adc;
     SendCommand(1, cic);
   }
 
@@ -114,13 +115,18 @@ public class Client
     lastDelay = (long)(readDelay * adcRate + 0.5);
     lastRead = 0;
     size = 0;
+    evts.Clear();
     SendCommand(6, 0);
   }
 
   private void UpdateSize()
   {
-    long sz = (long)(lastDelay / (cicRate * 2) + 0.5);
-    if (sz > 0) SendCommand(9, (long)lastRead << 40 | (sz - 1));
+    long sz = (long)(lastDelay / (cicRate * 2.0) + 0.5);
+    if (sz > 0)
+    {
+      evts.Add(new Event(lastRead, sz));
+      SendCommand(9, (long)lastRead << 40 | (sz - 1));
+    }
     if (lastRead > 0) size += sz;
     lastDelay = 0;
     lastRead = 0;
@@ -144,6 +150,41 @@ public class Client
       lastDelay = dly;
       lastRead = read;
     }
+  }
+
+  public float[] ReadTime()
+  {
+    long i, keep, skip;
+    double dt;
+    float[] result;
+    UpdateSize();
+    try
+    {
+      result = new float[size]; ;
+    }
+    catch
+    {
+      return new float[0];
+    }
+    keep = 0;
+    skip = 0;
+    foreach (Event e in evts)
+    {
+      if (e.read != 0)
+      {
+        for (i = 0; i < e.size; i++) result[keep + i] = keep + skip + i;
+        keep += e.size;
+      }
+      else
+      {
+        skip += e.size;
+      }
+    }
+
+    dt = cicRate * 2.0 / adcRate;
+    for (i = 0; i < result.Length; i++) result[i] *= (float)dt;
+
+    return result;
   }
 
   public float[] ReadData()

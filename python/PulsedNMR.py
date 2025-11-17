@@ -11,14 +11,14 @@ class Client:
         self.adc_rate = 125
         # CIC decimation rate
         self.cic_rate = 50
-        # time between two RX samples
-        self.dt = self.cic_rate * 2 / self.adc_rate
         # total delay
         self.last_delay = 0
         # read flag of the last event
         self.last_read = 0
         # total number of RX samples
         self.size = 0
+        # RX events
+        self.evts = []
 
     def connect(self, host):
         if self.socket is not None:
@@ -58,7 +58,6 @@ class Client:
     def set_rates(self, adc, cic):
         self.adc_rate = adc
         self.cic_rate = cic
-        self.dt = cic * 2 / adc
         self.send_command(1, cic)
 
     def set_dac(self, level):
@@ -79,12 +78,14 @@ class Client:
         self.last_delay = int(read_delay * self.adc_rate + 0.5)
         self.last_read = 0
         self.size = 0
+        self.evts.clear()
         self.send_command(6, 0)
 
     def update_size(self):
-        sz = int(self.last_delay / (self.cic_rate * 2) + 0.5)
+        sz = int(self.last_delay / (self.cic_rate * 2.0) + 0.5)
         if sz > 0:
-            self.send_command(9, self.last_read << 40 | int(sz - 1))
+            self.evts.append((self.last_read, sz))
+            self.send_command(9, self.last_read << 40 | (sz - 1))
         if self.last_read:
             self.size += sz
         self.last_delay = 0
@@ -103,6 +104,22 @@ class Client:
             self.update_size()
             self.last_delay = dly
             self.last_read = read
+
+    def read_time(self):
+        self.update_size()
+
+        time = np.empty(self.size, np.float32)
+        keep = 0
+        skip = 0
+
+        for read, size in self.evts:
+            if read:
+                time[keep : keep + size] = np.arange(keep + skip, keep + skip + size)
+                keep += size
+            else:
+                skip += size
+
+        return time * (self.cic_rate * 2.0 / self.adc_rate)
 
     def read_data(self):
         self.update_size()
