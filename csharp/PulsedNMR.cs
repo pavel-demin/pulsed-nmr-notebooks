@@ -150,7 +150,11 @@ public class Client
     lastRead = 0;
   }
 
+#if NET20 || NET35
+  public void AddEvent(double delay, int sync, int gate, int read, double level, double txPhase, double rxPhase)
+#else
   public void AddEvent(double delay, int sync = 0, int gate = 0, int read = 0, double level = 0, double txPhase = 0, double rxPhase = 0)
+#endif
   {
     long dly = (long)(delay * adcRate + 0.5);
     long lvl = (long)(level / 100.0 * 32766 + 0.5);
