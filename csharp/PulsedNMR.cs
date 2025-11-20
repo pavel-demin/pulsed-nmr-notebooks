@@ -128,9 +128,9 @@ public class Client
     SendCommand(5, pin);
   }
 
-  public void ClearEvents(double readDelay)
+  public void ClearEvents()
   {
-    lastDelay = (long)(readDelay * adcRate + 0.5);
+    lastDelay = (long)(adcRate * cicRate * 2.0 + 0.5);
     lastRead = 0;
     size = 0;
     evts.Clear();

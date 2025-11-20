@@ -80,8 +80,8 @@ function clear_pin!(c::Client; pin::Int64)
     _send_command(c, 5, pin)
 end
 
-function clear_events!(c::Client; read_delay::Real=0)
-    c.last_delay = round(Int64, read_delay * c.adc_rate)
+function clear_events!(c::Client)
+    c.last_delay = round(Int64, c.adc_rate * c.cic_rate * 2.0)
     c.last_read = 0
     c.size = 0
     empty!(c.evts)

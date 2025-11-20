@@ -74,8 +74,8 @@ class Client:
     def clear_pin(self, pin):
         self.send_command(5, pin)
 
-    def clear_events(self, read_delay=0):
-        self.last_delay = int(read_delay * self.adc_rate + 0.5)
+    def clear_events(self):
+        self.last_delay = int(self.adc_rate * self.cic_rate * 2.0 + 0.5)
         self.last_read = 0
         self.size = 0
         self.evts.clear()
