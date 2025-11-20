@@ -139,11 +139,9 @@ class Client:
             try:
                 buffer = self.socket.recv(limit - offset)
             except:
-                self.disconnect()
                 break
             size = len(buffer)
             if size == 0:
-                self.disconnect()
                 break
             view[offset : offset + size] = np.frombuffer(buffer, np.uint8)
             offset += size

@@ -243,18 +243,10 @@ public class Client
       }
       catch (Exception e)
       {
-        Disconnect();
-#if WINDOWS
-        MessageBox.Show(e.Message);
-#endif
         break;
       }
       if (n == 0)
       {
-        Disconnect();
-#if WINDOWS
-        MessageBox.Show("Connection to server has been lost");
-#endif
         break;
       }
       Buffer.BlockCopy(buffer, 0, result, offset, n);
