@@ -2,6 +2,10 @@ using System;
 using System.Net.Sockets;
 using System.Collections.Generic;
 
+#if WINDOWS
+using System.Windows.Forms;
+#endif
+
 internal struct Event
 {
   public int read;
@@ -26,17 +30,31 @@ public class Client
 
   public void Connect(string host)
   {
+    IAsyncResult result;
     if (socket != null) return;
     try
     {
       socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
       socket.SendTimeout = 1000;
       socket.ReceiveTimeout = 1000;
-      socket.Connect(host, 1001);
+      result = socket.BeginConnect(host, 1001, null, null);
+      result.AsyncWaitHandle.WaitOne(1000, true);
     }
-    catch
+    catch (Exception e)
     {
       Disconnect();
+#if WINDOWS
+      MessageBox.Show(e.Message);
+#endif
+      return;
+    }
+
+    if (!socket.Connected)
+    {
+      Disconnect();
+#if WINDOWS
+      MessageBox.Show("Failed to connect to server");
+#endif
     }
   }
 
@@ -162,8 +180,11 @@ public class Client
     {
       result = new float[size]; ;
     }
-    catch
+    catch (Exception e)
     {
+#if WINDOWS
+      MessageBox.Show(e.Message);
+#endif
       return new float[0];
     }
     keep = 0;
@@ -199,8 +220,11 @@ public class Client
       buffer = new byte[65536];
       result = new float[size * 4];
     }
-    catch
+    catch (Exception e)
     {
+#if WINDOWS
+      MessageBox.Show(e.Message);
+#endif
       return new float[0];
     }
     if (socket == null) return result;
@@ -213,14 +237,20 @@ public class Client
       {
         n = socket.Receive(buffer);
       }
-      catch
+      catch (Exception e)
       {
         Disconnect();
+#if WINDOWS
+        MessageBox.Show(e.Message);
+#endif
         break;
       }
       if (n == 0)
       {
         Disconnect();
+#if WINDOWS
+        MessageBox.Show("Connection to server has been lost");
+#endif
         break;
       }
       Buffer.BlockCopy(buffer, 0, result, offset, n);
