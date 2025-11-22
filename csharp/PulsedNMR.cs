@@ -231,7 +231,7 @@ public class Client
 #endif
       return new float[0];
     }
-    if (socket == null) return result;
+    if (socket == null) return new float[0];
     SendCommand(10, size);
     offset = 0;
     limit = size * 16;
@@ -241,13 +241,13 @@ public class Client
       {
         n = socket.Receive(buffer);
       }
-      catch (Exception e)
+      catch
       {
-        break;
+        return new float[0];
       }
       if (n == 0)
       {
-        break;
+        return new float[0];
       }
       Buffer.BlockCopy(buffer, 0, result, offset, n);
       offset += n;
