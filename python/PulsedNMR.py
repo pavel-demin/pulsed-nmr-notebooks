@@ -124,11 +124,10 @@ class Client:
     def read_data(self):
         self.update_size()
 
-        data = np.zeros(self.size * 2, np.complex64)
-
         if self.socket is None:
-            return data
+            return None
 
+        data = np.zeros(self.size * 2, np.complex64)
         view = data.view(np.uint8)
         limit = view.size
         offset = 0
@@ -139,10 +138,10 @@ class Client:
             try:
                 buffer = self.socket.recv(limit - offset)
             except:
-                break
+                return None
             size = len(buffer)
             if size == 0:
-                break
+                return None
             view[offset : offset + size] = np.frombuffer(buffer, np.uint8)
             offset += size
 
